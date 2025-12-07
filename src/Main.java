@@ -1,3 +1,4 @@
+import javafx.animation.ScaleTransition;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -8,18 +9,20 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.text.Font;
+import javafx.util.Duration;
 
 public class Main extends Application {
 
-    private static MediaPlayer mediaPlayer; // persistent music
+    private static MediaPlayer mediaPlayer;
     private double happiness = 0.60;
     private double hunger = 0.70;
     private double energy = 0.50;
-    private double cleanliness = 0.40;
+    private double cleanliness = 0.70;
     private ImageView foodDisplay;
     private int foodIndex = 0;
     private final String[] foods = {"peas.png", "birdseed.png", "corn.png", "oats.png"};
@@ -249,99 +252,156 @@ public class Main extends Application {
 
         StackPane root = (StackPane) stage.getScene().getRoot();
 
+        // CHARACTER
         Image duckChar = new Image(getClass().getResource("/dockie.png").toExternalForm(), false);
         ImageView charac = new ImageView(duckChar);
         charac.setFitWidth(80);
         charac.setPreserveRatio(true);
+        StackPane.setAlignment(charac, Pos.BOTTOM_CENTER);
+        StackPane.setMargin(charac, new Insets(0, 0, 210, 0));
 
+        // SIGN
         Image sign = new Image(getClass().getResource("/sign.png").toExternalForm());
         ImageView signView = new ImageView(sign);
         signView.setFitWidth(180);
         signView.setPreserveRatio(true);
-
-        StackPane.setAlignment(charac, Pos.BOTTOM_CENTER);
-        StackPane.setMargin(charac, new Insets(0, 0, 210, 0)); // adjust bottom margin
-
         StackPane.setAlignment(signView, Pos.TOP_CENTER);
         StackPane.setMargin(signView, new Insets(70, 0, 0, 0));
 
-        if (!root.getChildren().contains(charac)) {
-            root.getChildren().add(charac);
-        }
+        // HOUSE LABEL
+        Label userLabel = new Label("Joushua's House");
+        userLabel.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+        userLabel.setTextFill(Color.WHITE);
+        userLabel.setStyle(
+                "-fx-background-color: transparent;" +
+                        "-fx-border-color: transparent;"
+        );
+        userLabel.setPrefWidth(180);
+        userLabel.setPrefHeight(40);
 
-        if (!root.getChildren().contains(signView)) {
-            root.getChildren().add(signView);
-        }
+        // Align label
+        StackPane.setAlignment(userLabel, Pos.TOP_CENTER);
+        StackPane.setMargin(userLabel, new Insets(130, 0, 0, 57)); // adjust top, left, bottom, right
 
+        if (!root.getChildren().contains(charac)) root.getChildren().add(charac);
+        if (!root.getChildren().contains(signView)) root.getChildren().add(signView);
+        if (!root.getChildren().contains(userLabel)) root.getChildren().add(userLabel);
     }
 
+
     private void kitchen(Stage stage, String username) {
-
-        // Base layout
         BorderPane layout = sceneTemplate(stage, "eat.png", username);
-
-        // Access root StackPane
         StackPane root = (StackPane) stage.getScene().getRoot();
 
-        // ====== CHARACTER IMAGE ======
-        Image duckChar = new Image(getClass().getResource("/dockieKitchen.png").toExternalForm(), false);
-        ImageView charac = new ImageView(duckChar);
-        charac.setFitWidth(150);
-        charac.setPreserveRatio(true);
-        StackPane.setAlignment(charac, Pos.BOTTOM_CENTER);
-        StackPane.setMargin(charac, new Insets(0, -140, 100, 0));
-        if (!root.getChildren().contains(charac)) {
-            root.getChildren().add(charac);
-        }
+        // ===== DUCK IMAGE (DROP TARGET) =====
+        ImageView duck = new ImageView(new Image(getClass().getResource("/dockieKitchen.png").toExternalForm(), false));
+        duck.setFitWidth(150); duck.setPreserveRatio(true);
+        StackPane.setAlignment(duck, Pos.BOTTOM_CENTER);
+        StackPane.setMargin(duck, new Insets(0, -140, 100, 0));
+        root.getChildren().add(duck);
 
-        // ====== FOOD + BUTTON HOLDER ======
+        // Duck does not block buttons by default
+        duck.setMouseTransparent(true);
+
+        // ===== FOOD PANE =====
         Pane foodPane = new Pane();
         foodPane.setPrefSize(200, 300);
-
-        // Food image
-        Image img = new Image(getClass().getResourceAsStream("/" + foods[foodIndex]));
-        foodDisplay = new ImageView(img);
-        foodDisplay.setFitWidth(90);   // Smaller food size
-        foodDisplay.setPreserveRatio(true);
-        foodDisplay.setLayoutX(55);
-        foodDisplay.setLayoutY(130);
-
-        // Left button
-        Button btnLeft = new Button();
-        btnLeft.getStyleClass().add("arrow-button-left");
-        btnLeft.setPrefSize(30, 30);
-        btnLeft.setLayoutX(20);
-        btnLeft.setLayoutY(200);
-        btnLeft.setOnAction(e -> {
-            foodIndex = (foodIndex - 1 + foods.length) % foods.length;
-            updateFoodImage();
-        });
-
-        // Right button
-        Button btnRight = new Button();
-        btnRight.getStyleClass().add("arrow-button-right");
-        btnRight.setPrefSize(30, 30);
-        btnRight.setLayoutX(140);
-        btnRight.setLayoutY(200);
-        btnRight.setOnAction(e -> {
-            foodIndex = (foodIndex + 1) % foods.length;
-            updateFoodImage();
-        });
-
-        foodPane.getChildren().addAll(foodDisplay, btnLeft, btnRight);
-
-        // Add food pane to layout center
         layout.setCenter(foodPane);
 
-        // Show scene
+        // Buttons
+        Button btnLeft = new Button(); btnLeft.getStyleClass().add("arrow-button-left");
+        btnLeft.setPrefSize(30, 30); btnLeft.setLayoutX(20); btnLeft.setLayoutY(200);
+        Button btnRight = new Button(); btnRight.getStyleClass().add("arrow-button-right");
+        btnRight.setPrefSize(30, 30); btnRight.setLayoutX(140); btnRight.setLayoutY(200);
+        foodPane.getChildren().addAll(btnLeft, btnRight);
+
+        // ===== INITIAL FOOD =====
+        createFood(foodPane, duck);
+
+        // Button actions to switch food manually
+        btnLeft.setOnAction(e -> {
+            foodIndex = (foodIndex - 1 + foods.length) % foods.length;
+            updateFood(foodPane, duck);
+        });
+
+        btnRight.setOnAction(e -> {
+            foodIndex = (foodIndex + 1) % foods.length;
+            updateFood(foodPane, duck);
+        });
+
         stage.setScene(new Scene(layout, 400, 500));
         stage.show();
     }
 
-    private void updateFoodImage() {
-        Image img = new Image(getClass().getResourceAsStream("/" + foods[foodIndex]));
-        foodDisplay.setImage(img);
+    // Create the food ImageView and make it draggable
+    private void createFood(Pane foodPane, ImageView duck) {
+        foodDisplay = new ImageView(new Image(getClass().getResourceAsStream("/" + foods[foodIndex])));
+        foodDisplay.setFitWidth(90); foodDisplay.setPreserveRatio(true);
+        foodDisplay.setLayoutX(55); foodDisplay.setLayoutY(130);
+
+        makeDraggable(foodDisplay, duck, foodPane);
+        foodPane.getChildren().add(foodDisplay);
     }
+
+    // Update the current food
+    private void updateFood(Pane foodPane, ImageView duck) {
+        foodPane.getChildren().remove(foodDisplay); // remove old food
+        createFood(foodPane, duck);                 // add new food
+    }
+
+    // Draggable
+    private void makeDraggable(ImageView food, ImageView duck, Pane pane) {
+        final Delta dragDelta = new Delta();
+
+        food.setOnMousePressed(e -> {
+            dragDelta.x = e.getSceneX() - food.getLayoutX();
+            dragDelta.y = e.getSceneY() - food.getLayoutY();
+            food.toFront(); // above duck while dragging
+        });
+
+        food.setOnMouseDragged(e -> {
+            food.setLayoutX(e.getSceneX() - dragDelta.x);
+            food.setLayoutY(e.getSceneY() - dragDelta.y);
+            food.toFront(); // keep food above duck
+        });
+
+        food.setOnDragDetected(e -> {
+            food.startFullDrag();
+            duck.setMouseTransparent(false);
+            food.toFront();
+            e.consume();
+        });
+
+        // Feeding the duck
+        duck.setOnMouseDragReleased(e -> {
+            Object src = e.getGestureSource();
+            if (src instanceof ImageView draggedFood) {
+
+                // Bring food to front so it looks like duck eats it
+                draggedFood.toFront();
+
+                // Eat animation
+                ScaleTransition st = new ScaleTransition(Duration.millis(140), duck);
+                st.setFromX(1); st.setFromY(1);
+                st.setToX(1.15); st.setToY(1.15);
+                st.setAutoReverse(true);
+                st.setCycleCount(2);
+                st.play();
+
+                // Remove food and show next
+                foodIndex = (foodIndex + 1) % foods.length;
+                updateFood(pane, duck);
+            }
+
+            duck.setMouseTransparent(true);
+        });
+
+        food.setOnMouseReleased(e -> duck.setMouseTransparent(true));
+    }
+
+
+    private static class Delta { double x, y; }
+
 
     private void bathRoom(Stage stage, String username) {
         BorderPane layout = sceneTemplate(stage, "cr.png", username);
@@ -359,10 +419,11 @@ public class Main extends Application {
         bucketView.setFitHeight(80);
         bucketView.setFitWidth(80);
 
-        // size
+        // Duck size
         dockieView.setFitWidth(150);
         dockieView.setPreserveRatio(true);
 
+        // Buttons
         Button bucketBtn = new Button();
         bucketBtn.setGraphic(bucketView);
         bucketBtn.setStyle("-fx-background-color: transparent;");
@@ -371,11 +432,12 @@ public class Main extends Application {
         brushBtn.setGraphic(brushView);
         brushBtn.setStyle("-fx-background-color: transparent;");
 
+        // Root pane
         StackPane root = (StackPane) stage.getScene().getRoot();
 
-
+        // Positioning
         StackPane.setAlignment(dockieView, Pos.CENTER);
-        dockieView.setTranslateY(20); // adjust up/down
+        dockieView.setTranslateY(20);
 
         StackPane.setAlignment(brushBtn, Pos.CENTER_RIGHT);
         brushBtn.setTranslateX(-20);
@@ -386,7 +448,44 @@ public class Main extends Application {
         bucketBtn.setTranslateY(40);
 
         root.getChildren().addAll(dockieView, bucketBtn, brushBtn);
+
+
+        double[] bucketOrig = { bucketBtn.getTranslateX(), bucketBtn.getTranslateY() };
+        double[] brushOrig = { brushBtn.getTranslateX(), brushBtn.getTranslateY() };
+
+        makeDraggable(bucketBtn, bucketOrig, dockieView);
+        makeDraggable(brushBtn, brushOrig, dockieView);
     }
+
+    private void makeDraggable(Button btn, double[] origPos, ImageView duck) {
+
+        final double[] mouseOffset = new double[2];
+
+        btn.setOnMousePressed(e -> {
+            mouseOffset[0] = e.getSceneX() - btn.getTranslateX();
+            mouseOffset[1] = e.getSceneY() - btn.getTranslateY();
+        });
+
+        btn.setOnMouseDragged(e -> {
+            btn.setTranslateX(e.getSceneX() - mouseOffset[0]);
+            btn.setTranslateY(e.getSceneY() - mouseOffset[1]);
+
+            // Touch detection (washing)
+            if (btn.getBoundsInParent().intersects(duck.getBoundsInParent())) {
+                duck.setOpacity(0.7);   // washing effect
+            } else {
+                duck.setOpacity(1.0);
+            }
+        });
+
+        btn.setOnMouseReleased(e -> {
+            // Snap back
+            btn.setTranslateX(origPos[0]);
+            btn.setTranslateY(origPos[1]);
+            duck.setOpacity(1.0);
+        });
+    }
+
 
     private void bedRoom(Stage stage, String username) {
         // Get base layout from sceneTemplate
@@ -618,7 +717,45 @@ public class Main extends Application {
         stage.setMaximized(false);
         stage.show();
     }
+    public void flappyDuck (Stage stage, String username){
+        StackPane root = new StackPane();
+        root.setStyle("-fx-background-color: #fff9d6;");
 
+        Scene scene = new Scene(root, 400, 500);
+        scene.getStylesheets().add(getClass().getResource("/DuckStyle.css").toExternalForm());
+
+        Button backBtn = new Button("❮");
+        backBtn.getStyleClass().add("back-button");
+        backBtn.setOnAction(e -> GamesFrame(stage, username));
+
+        StackPane.setAlignment(backBtn, Pos.TOP_LEFT);
+        StackPane.setMargin(backBtn, new Insets(10, 0, 0, 10));
+
+        root.getChildren().add(backBtn);
+
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    public void cardFlip (Stage stage, String username){
+        StackPane root = new StackPane();
+        root.setStyle("-fx-background-color: #fff9d6;");
+
+        Scene scene = new Scene(root, 400, 500);
+        scene.getStylesheets().add(getClass().getResource("/DuckStyle.css").toExternalForm());
+
+        Button backBtn = new Button("❮");
+        backBtn.getStyleClass().add("back-button");
+        backBtn.setOnAction(e -> GamesFrame(stage, username));
+
+        StackPane.setAlignment(backBtn, Pos.TOP_LEFT);
+        StackPane.setMargin(backBtn, new Insets(10, 0, 0, 10));
+
+        root.getChildren().add(backBtn);
+
+        stage.setScene(scene);
+        stage.show();
+    }
     public void SettingsFrame(Stage stage, String username) {
 
         StackPane root = new StackPane();
@@ -763,45 +900,7 @@ public class Main extends Application {
         v.setAlignment(Pos.CENTER_LEFT);
         return v;
     }
-    public void flappyDuck (Stage stage, String username){
-        StackPane root = new StackPane();
-        root.setStyle("-fx-background-color: #fff9d6;");
 
-        Scene scene = new Scene(root, 400, 500);
-        scene.getStylesheets().add(getClass().getResource("/DuckStyle.css").toExternalForm());
-
-        Button backBtn = new Button("❮");
-        backBtn.getStyleClass().add("back-button");
-        backBtn.setOnAction(e -> GamesFrame(stage, username));
-
-        StackPane.setAlignment(backBtn, Pos.TOP_LEFT);
-        StackPane.setMargin(backBtn, new Insets(10, 0, 0, 10));
-
-        root.getChildren().add(backBtn);
-
-        stage.setScene(scene);
-        stage.show();
-    }
-
-    public void cardFlip (Stage stage, String username){
-        StackPane root = new StackPane();
-        root.setStyle("-fx-background-color: #fff9d6;");
-
-        Scene scene = new Scene(root, 400, 500);
-        scene.getStylesheets().add(getClass().getResource("/DuckStyle.css").toExternalForm());
-
-        Button backBtn = new Button("❮");
-        backBtn.getStyleClass().add("back-button");
-        backBtn.setOnAction(e -> GamesFrame(stage, username));
-
-        StackPane.setAlignment(backBtn, Pos.TOP_LEFT);
-        StackPane.setMargin(backBtn, new Insets(10, 0, 0, 10));
-
-        root.getChildren().add(backBtn);
-
-        stage.setScene(scene);
-        stage.show();
-    }
 
     private void aboutUs(Stage stage, String username) {
         StackPane root = new StackPane();
@@ -851,9 +950,9 @@ public class Main extends Application {
         hBoxTop.setLayoutX(35);
         hBoxTop.setLayoutY(110);
 
-        VBox p4 = createProfile.apply("/grace.png", "Grace Galue");
+        VBox p4 = createProfile.apply("/grace.png", "Grace Galua");
         VBox p5 = createProfile.apply("/hazel.png", "Hazel Brigoli");
-        VBox p6 = createProfile.apply("/house.png", "Flor Gamali");
+        VBox p6 = createProfile.apply("/flor.png", "Flor Gamali");
 
         HBox hBoxBottom = new HBox(20, p4, p5, p6);
         hBoxBottom.setLayoutX(35);
